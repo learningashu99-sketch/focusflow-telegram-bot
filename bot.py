@@ -23,6 +23,7 @@ conn = sqlite3.connect(
     check_same_thread=False
 )
 conn.row_factory = sqlite3.Row
+conn.execute("PRAGMA journal_mode=WAL")
 
 # Use a single setup cursor just for table creation, then discard it
 _setup = conn.cursor()
@@ -367,14 +368,20 @@ async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     medium_count = sum(1 for r in rows if r["priority"] == "Medium")
     low_count = sum(1 for r in rows if r["priority"] == "Low")
 
-    await update.message.reply_text(
-        f"📊 Task Statistics\n\n"
-        f"Total Tasks: {total_tasks}\n"
-        f"High Priority: {high_count}\n"
-        f"Medium Priority: {medium_count}\n"
-        f"Low Priority: {low_count}"
-    )
+    stats_row = db_get_stats(user_id)
+    streak_val = stats_row["streak"] if stats_row else 0
+    pomodoros = stats_row["pomodoros_completed"] if stats_row else 0
 
+    await update.message.reply_text(
+        f"📊 Your Stats\n\n"
+        f"📋 Total Tasks: {total_tasks}\n"
+        f"🚨 High Priority: {high_count}\n"
+        f"🟡 Medium Priority: {medium_count}\n"
+        f"🟢 Low Priority: {low_count}\n\n"
+        f"🔥 Current Streak: {streak_val} day(s)\n"
+        f"🍅 Pomodoros Completed: {pomodoros}\n\n"
+        f"💡 Use /analytics for full dashboard"
+    )
 
 async def set_due(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.effective_user.id)
@@ -411,9 +418,16 @@ async def set_due(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     db_update_due_date(task_row["id"], due_date)
 
-    await update.message.reply_text(
-        f"⏰ Due date for task {task_number} set to {due_date}"
-    )
+    if " " in due_date:
+        await update.message.reply_text(
+            f"⏰ Due date for task {task_number} set to {due_date}"
+        )
+    else:
+        await update.message.reply_text(
+            f"⏰ Due date for task {task_number} set to {due_date}\n\n"
+            f"💡 Tip: Add a time to get a reminder notification!\n"
+            f"Example: /setdue {task_number} {due_date} 14:00"
+        )
 
 
 async def upcoming_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -425,7 +439,8 @@ async def upcoming_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     upcoming = []
-    now = datetime.now()
+    now = datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None)
+
     for row in rows:
         due_date = row["due_date"]
         if due_date is None:
