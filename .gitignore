@@ -1,0 +1,6 @@
+.env
+focusflow.db
+__pycache__/
+*.pyc
+data/tasks.json
+data/user_stats.json
