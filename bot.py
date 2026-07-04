@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 from datetime import datetime
-
+from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 import os
 import sqlite3
@@ -218,7 +218,7 @@ async def add_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     user_id = str(update.effective_user.id)
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+    current_time = datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d %H:%M")
 
     db_add_task(user_id, task, "Medium", current_time, None, 0)
 
@@ -276,7 +276,7 @@ async def done_task(update: Update, context: ContextTypes.DEFAULT_TYPE):
     db_ensure_stats(user_id)
     stats_row = db_get_stats(user_id)
 
-    today = datetime.now().date()
+    today = datetime.now(ZoneInfo("Asia/Kolkata")).date()
     last_date_str = stats_row["last_completed_date"]
     streak = stats_row["streak"]
 
