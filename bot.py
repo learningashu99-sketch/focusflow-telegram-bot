@@ -479,7 +479,7 @@ async def overdue_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("No tasks available.")
         return
 
-    current_time = datetime.now()
+    current_time = datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None)
     overdue = []
 
     for row in rows:
@@ -513,7 +513,7 @@ async def overdue_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def reminder_checker(context):
-    current_time = datetime.now()
+    current_time = datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None)
 
     cur = conn.cursor()  # Bug 1 fix: local cursor
     cur.execute(
@@ -540,8 +540,8 @@ async def reminder_checker(context):
                     )
                 )
                 db_mark_reminded(row["id"])
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"Reminder error: {e}")
 
 
 async def streak(update: Update, context: ContextTypes.DEFAULT_TYPE):
